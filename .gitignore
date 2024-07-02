@@ -1,0 +1,3 @@
+venv/*
+web-scraper/testing/testing_times/*
+web-scraper/data/chromedriver-linux64/*
