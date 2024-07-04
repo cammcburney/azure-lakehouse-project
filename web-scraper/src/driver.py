@@ -17,54 +17,81 @@ options.add_argument("--disable-cookies")
 options.add_argument('--disable-notifications')
 driver = webdriver.Chrome(options=options)
 
+url_dict = {"graphics_cards_amd": "https://www.ebuyer.com/store/Components/cat/Graphics-Cards-AMD",
+            "graphics_cards_nvidia": "https://www.ebuyer.com/store/Components/cat/Graphics-Cards-Nvidia"}
 
-# Open the Currys laptop page
-driver.get("https://www.argos.co.uk/")
-time.sleep(2)
+data_set = {"computer_parts": {}}
+for information, url in url_dict.items():
+    time.sleep(1)
+    # Open the Currys laptop page
+    driver.get(url)
+    time.sleep(2)
 
-# Wait for cookies button to appear
-accept_cookies_button = WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.ID, 'explicit-consent-prompt-accept'))
-)
-print("--SUCCESS-- Cookies button located.")
-time.sleep(1)
+    # Wait for cookies button to appear
+    accept_cookies_button = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, 'onetrust-accept-btn-handler'))
+    )
+    print("--SUCCESS-- Cookies button located.")
+    time.sleep(1)
 
-# Accept cookies
-accept_cookies_button.click()
-print("--SUCCESS-- Cookies button clicked.")
+    # Accept cookies
+    accept_cookies_button.click()
+    print("--SUCCESS-- Cookies button clicked.")
 
-#Search for laptops (Expand this into a for loop for items)
-search = WebDriverWait(driver, 10).until(
-    EC.element_to_be_clickable((By.CLASS_NAME, "_1Rz0y"))
-)
-print("--SUCCESS-- Search bar found.")
+    time.sleep(5)
 
-search.send_keys("laptops")
-search.send_keys(Keys.RETURN)
-print("--SUCCESS-- Search returned.")
+    # # Find elements to iterate over
+    items_listed = driver.find_elements(By.CLASS_NAME, "listing-product")
+    print(f"Number of items listed: {len(items_listed)}")
+    time.sleep(1)
 
+    # Set up dictionary to store data
+    product_data = []
 
-#<--------------------------------------------------------------------------------------------------------------------------------------->
-#Let search load (IMPORTANT)
-time.sleep(5)
-
-# Find elements to iterate over
-items_listed = driver.find_elements(By.CLASS_NAME, "ProductCardstyles__Wrapper-h52kot-1")
-print(f"Number of items listed: {len(items_listed)}")
-time.sleep(1)
-
-# Set up dictionary to store data
-laptop_data = {"laptop_list": {}}
-
-# Iterate through listed elements to scrape data
-for laptop in items_listed:
-    title = laptop.find_element(By.CLASS_NAME, "ProductCardstyles__Title-h52kot-12").text
-    print(title)
+    # Iterate through listed elements to scrape data
+    for item in items_listed:
+        title = item.find_element(By.CLASS_NAME, "listing-product-title").text
+        price = item.find_element(By.CLASS_NAME, "price").text
+        try:
+            memory_size = driver.find_element(By.XPATH, "//span[contains(text(), 'Memory Size / Type')]/following-sibling::span").text
+        except:
+            memory_size = "N/A"
         
+        try:
+            clock_speed = driver.find_element(By.XPATH, "//span[contains(text(), 'Clock Speed')]/following-sibling::span").text
+        except:
+            clock_speed = "N/A"
+        
+        try:
+            interface = driver.find_element(By.XPATH, "//span[contains(text(), 'Interface')]/following-sibling::span").text
+        except:
+            interface = "N/A"
+        
+        try:
+            stream_processors = driver.find_element(By.XPATH, "//span[contains(text(), 'Stream Processors')]/following-sibling::span").text
+        except:
+            stream_processors = "N/A"
+        
+        try:
+            bandwidth = driver.find_element(By.XPATH, "//span[contains(text(), 'Bandwidth')]/following-sibling::span").text
+        except:
+            bandwidth = "N/A"
+        product_data.append({
+        "title": title,
+        "price": price,
+        "memory_size": memory_size,
+        "clock_speed": clock_speed,
+        "interface": interface,
+        "stream_processors": stream_processors,
+        "bandwidth": bandwidth
+        })
+        
+    data_set["computer_parts"][information] = product_data
+    # Exit
+    driver.quit()
+    time.sleep(3)
 
-# Exit
-driver.quit()
-
+print(data_set)
 
 # #<--------------------------------------------------------------------------------------------------------------------------------------->
 

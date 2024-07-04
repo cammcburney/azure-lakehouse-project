@@ -117,3 +117,13 @@ formatted_duration = "{:.2f} seconds".format(total_seconds + milliseconds)
 #Write test time to file.
 with open("web-scraper/testing/testing_times/driver_test_time.txt", "a") as file:
     file.write(formatted_duration + "\n")
+
+#Search for laptops (Expand this into a for loop for items)
+# search = WebDriverWait(driver, 10).until(
+#     EC.element_to_be_clickable((By.CLASS_NAME, "_1Rz0y"))
+# )
+# print("--SUCCESS-- Search bar found.")
+
+# search.send_keys("laptops")
+# search.send_keys(Keys.RETURN)
+# print("--SUCCESS-- Search returned.")
