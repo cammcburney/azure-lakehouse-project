@@ -26,8 +26,8 @@ url_dict = {
             "graphics_cards_nvidia": "https://www.ebuyer.com/store/Components/cat/Graphics-Cards-Nvidia",
             "memory_laptops": "https://www.ebuyer.com/store/Components/cat/Memory---Laptop",
             "memory_computers": "https://www.ebuyer.com/store/Components/cat/Memory---PC",
-            # "motherboards_amd": "https://www.ebuyer.com/store/Components/cat/Motherboards-AMD",
-            # "motherboards_intel": "https://www.ebuyer.com/store/Components/cat/Motherboards-Intel",
+            "motherboards_amd": "https://www.ebuyer.com/store/Components/cat/Motherboards-AMD",
+            "motherboards_intel": "https://www.ebuyer.com/store/Components/cat/Motherboards-Intel",
             "power_supplies": "https://www.ebuyer.com/store/Components/cat/Power-Supplies"
             }
 data_set = {"computer_parts": {}}
@@ -45,7 +45,11 @@ def iterate_and_store_items(driver, data_set, information, page_count):
     for item in items_listed:
         name = item.find_element(By.CLASS_NAME, "listing-product-title").text
         price = item.find_element(By.CLASS_NAME, "price").text
-        details = item.find_element(By.CLASS_NAME, "listing-key-selling-points").text
+        details_element = item.find_elements(By.CLASS_NAME, "listing-key-selling-points")
+        if details_element:
+            details = details_element[0].text
+        else:
+            details = "Details not available"
 
         product_data.append({
             "product_name": name,
@@ -73,8 +77,10 @@ for information, url in url_dict.items():
         else:
             driver.get(f"{url}?page={page_count}")
 
+        time.sleep(1)
+
         # Wait for cookies button to appear and click it
-        accept_cookies_button = WebDriverWait(driver, 5).until(
+        accept_cookies_button = WebDriverWait(driver, 7).until(
             EC.presence_of_element_located((By.ID, 'onetrust-accept-btn-handler'))
         )
         print("--SUCCESS-- Cookies button located.")
