@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import ElementClickInterceptedException 
 from datetime import datetime
 import time
 import json
@@ -25,61 +26,85 @@ url_dict = {
             "graphics_cards_nvidia": "https://www.ebuyer.com/store/Components/cat/Graphics-Cards-Nvidia",
             "memory_laptops": "https://www.ebuyer.com/store/Components/cat/Memory---Laptop",
             "memory_computers": "https://www.ebuyer.com/store/Components/cat/Memory---PC",
-            "motherboards_amd": "https://www.ebuyer.com/store/Components/cat/Motherboards-AMD",
-            "motherboards_intel": "https://www.ebuyer.com/store/Components/cat/Motherboards-Intel",
+            # "motherboards_amd": "https://www.ebuyer.com/store/Components/cat/Motherboards-AMD",
+            # "motherboards_intel": "https://www.ebuyer.com/store/Components/cat/Motherboards-Intel",
             "power_supplies": "https://www.ebuyer.com/store/Components/cat/Power-Supplies"
             }
-
 data_set = {"computer_parts": {}}
-for information, url in url_dict.items():
 
-    driver = webdriver.Chrome(options=options)
+# Function to iterate and store items
+def iterate_and_store_items(driver, data_set, information, page_count):
 
-    # Open the web page
-    driver.get(url)
-
-    # Wait for cookies button to appear
-    accept_cookies_button = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, 'onetrust-accept-btn-handler'))
-    )
-    print("--SUCCESS-- Cookies button located.")
-
-
-    # Accept cookies
-    accept_cookies_button.click()
-    print("--SUCCESS-- Cookies button clicked.")
-
-
-    # # Find elements to iterate over
+    # Find elements to iterate over
     items_listed = driver.find_elements(By.CLASS_NAME, "listing-product")
-    print(f"Number of items listed: {len(items_listed)}")
+    print(f"Number of items listed on page {page_count}: {len(items_listed)}")
 
     # Set up dictionary to store data
     product_data = []
 
-    # Iterate through listed elements to scrape data
     for item in items_listed:
         name = item.find_element(By.CLASS_NAME, "listing-product-title").text
         price = item.find_element(By.CLASS_NAME, "price").text
         details = item.find_element(By.CLASS_NAME, "listing-key-selling-points").text
-        
+
         product_data.append({
-        "product_name": name,
-        "product_price": price,
-        "product_details": details
+            "product_name": name,
+            "product_price": price,
+            "product_details": details
         })
-        
-    data_set["computer_parts"][information] = product_data
-    # Exit
-    driver.quit()
 
-#Write to json format for storage
-json_data = json.dumps(data_set)
-with open("./data/product_details", "w") as f:
+    if page_count == 1:
+        data_set["computer_parts"][information] = product_data
+    else:
+        data_set["computer_parts"][information].extend(product_data)
+
+# Iterate through each category in url_dict
+for information, url in url_dict.items():
+
+    page_count = 1
+
+    while True:
+        # Initialize WebDriver for each page
+        driver = webdriver.Chrome(options=options)
+
+        # Open the web page and check page count, append page count to url if > 1
+        if page_count == 1:
+            driver.get(url)
+        else:
+            driver.get(f"{url}?page={page_count}")
+
+        # Wait for cookies button to appear and click it
+        accept_cookies_button = WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.ID, 'onetrust-accept-btn-handler'))
+        )
+        print("--SUCCESS-- Cookies button located.")
+
+        accept_cookies_button.click()
+        print("--SUCCESS-- Cookies button clicked.")
+
+        # Call function to iterate over and store items
+        iterate_and_store_items(driver, data_set, information, page_count)
+
+        # Locate the next page button and pass through, add to page count
+        try:
+            next_page_button = driver.find_element(By.CLASS_NAME, "glyphicon-chevron-right")
+            
+            print(f"--SUCCESS-- Proceeding to page {page_count + 1}")
+            page_count += 1
+            driver.quit()
+            
+        except Exception as error:
+            print(f"--ERROR-- No more pages found: Error: {error}")
+            driver.quit()
+            break
+
+print(data_set)
+
+# Write to json format for storage
+json_data = json.dumps(data_set, indent=4)
+path = "./data/product_details.json" 
+with open(path, "w") as f:
     f.write(json_data)
-
-# #<--------------------------------------------------------------------------------------------------------------------------------------->
-
 
 # Time Program End.
 end_time = datetime.now()
@@ -89,6 +114,6 @@ time = (end_time - start_time)
 total_seconds = time.total_seconds()
 milliseconds = time.microseconds / 1000000
 formatted_duration = "{:.2f} seconds".format(total_seconds + milliseconds)
-#Write test time to file.
+# Write test time to file.
 with open("web-scraper/testing/testing_times/driver_time.txt", "a") as file:
     file.write(formatted_duration + "\n")
